@@ -259,19 +259,8 @@ const scrollToBottom = () => {
           <Button
             size="small"
             onClick={handleClearChat}
-            style={{
-              border: '1px solid #ff4d4f',
-              background: '#fff1f0',
-              color: '#ff4d4f',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#ff4d4f';
-              e.target.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = '#fff1f0';
-              e.target.style.color = '#ff4d4f';
-            }}
+            color="danger"
+            variant="filled"
           >
             Очистить
           </Button>
