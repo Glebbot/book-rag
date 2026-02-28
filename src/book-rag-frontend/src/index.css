@@ -1,0 +1,48 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+.ant-layout {
+  min-height: 100vh;
+}
+
+.ant-layout-content {
+  min-height: calc(100vh - 64px);
+}
+
+/* Убрать подчёркивания ссылок */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Убрать подчёркивания у кнопок */
+.ant-btn {
+  text-decoration: none !important;
+}
+
+/* Скроллбар как в Telegram */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
