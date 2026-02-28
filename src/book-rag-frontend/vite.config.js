@@ -8,10 +8,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/tests/setup.js',
     include: ['**/*.{test,spec}.{js,jsx}'],
-    // Настройка покрытия
     coverage: {
-      provider: 'v8', // Используем v8 для точных данных
-      reporter: ['text', 'json', 'html'], // Форматы отчета
+      all: true,
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'text-summary'],
       exclude: [
         'node_modules/',
         'src/tests/',
