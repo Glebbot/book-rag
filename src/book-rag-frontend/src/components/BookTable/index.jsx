@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { Table, Button, Space, Input, Select, Tag, Modal, Form, message, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, CommentOutlined, PlusOutlined } from '@ant-design/icons';
+import React, { useState, useRef } from 'react';
+import { Table, Button, Space, Input, InputNumber, Select, Tag, Modal, Form, message, Popconfirm, Empty } from 'antd';
+import { EditOutlined, DeleteOutlined, CommentOutlined, PlusOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getBooks, updateBook, deleteBook, uploadBook } from '../../api/books';
 
 const { Search } = Input;
 const { Option } = Select;
 
-// Доступные жанры для фильтра
 const AVAILABLE_GENRES = ['Роман', 'Исторический', 'Психологический', 'Фантастика', 'Драма', 'Новый'];
 
 const BookTable = () => {
@@ -24,28 +23,35 @@ const BookTable = () => {
     author: '',
   });
   const [form] = Form.useForm();
+  const fileInputRef = useRef(null);
 
-  // Загрузка списка книг
   const fetchBooks = async () => {
     setLoading(true);
     try {
       const response = await getBooks();
-      setBooks(response.data);
+      let booksData;
+      if (response?.data?.books && Array.isArray(response.data.books)) {
+        booksData = response.data.books;
+      } else if (Array.isArray(response?.data)) {
+        booksData = response.data;
+      } else {
+        booksData = [];
+      }
+      setBooks(booksData);
     } catch (error) {
       message.error('Ошибка загрузки книг: ' + (error.response?.data?.userMessage || error.message));
+      setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Первоначальная загрузка
   React.useEffect(() => {
     fetchBooks();
   }, []);
 
-  // Обработка загрузки файла
   const handleUpload = async (file) => {
-    if (!file.name.endsWith('.pdf')) {
+    if (!file?.name?.endsWith('.pdf')) {
       message.error('Пожалуйста, загрузите файл в формате PDF');
       return false;
     }
@@ -56,32 +62,32 @@ const BookTable = () => {
       message.success('Книга успешно загружена');
       await fetchBooks();
       setIsModalVisible(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (error) {
       message.error('Ошибка загрузки: ' + (error.response?.data?.userMessage || error.message));
     } finally {
       setUploading(false);
     }
-    return false; // Предотвращаем стандартную загрузку
+    return false;
   };
 
-  // Обработка редактирования
   const handleEdit = (record) => {
     setEditingBook(record);
     form.setFieldsValue(record);
     setIsModalVisible(true);
   };
 
-  // Сохранение изменений
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      
-      // Проверяем, что есть изменения
+
       const changes = {};
-      if (values.name !== editingBook.name) changes.name = values.name;
-      if (values.year !== editingBook.year) changes.year = values.year;
-      if (values.author !== editingBook.author) changes.author = values.author;
-      if (JSON.stringify(values.genres) !== JSON.stringify(editingBook.genres)) {
+      if (values.name !== editingBook?.name) changes.name = values.name;
+      if (values.year !== editingBook?.year) changes.year = values.year;
+      if (values.author !== editingBook?.author) changes.author = values.author;
+      if (JSON.stringify(values.genres) !== JSON.stringify(editingBook?.genres)) {
         changes.genres = values.genres;
       }
 
@@ -105,7 +111,6 @@ const BookTable = () => {
     }
   };
 
-  // Обработка удаления
   const handleDelete = async (bookId) => {
     try {
       await deleteBook(bookId);
@@ -116,93 +121,147 @@ const BookTable = () => {
     }
   };
 
-  // Переход к чату
-  const handleChat = (bookId) => {
-    navigate(`/chat/${bookId}`);
-  };
+  const handleChat = (bookId, bookName) => {
+    navigate(`/chat/${bookId}`, { state: { bookName } });
+};
 
-  // Фильтрация данных
-  const filteredBooks = books.filter((book) => {
-    const matchSearch = !filters.search || 
-      book.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-      book.author?.toLowerCase().includes(filters.search.toLowerCase());
-    const matchYear = !filters.year || book.year === filters.year;
-    const matchGenres = !filters.genres.length || 
-      filters.genres.some((g) => book.genres?.includes(g));
-    const matchAuthor = !filters.author || 
-      book.author?.toLowerCase().includes(filters.author.toLowerCase());
-    
+  const safeBooks = Array.isArray(books) ? books : [];
+
+  const filteredBooks = safeBooks.filter((book) => {
+    const matchSearch = !filters.search ||
+      (book?.name && book.name.toLowerCase().includes(filters.search.toLowerCase())) ||
+      (book?.author && book.author.toLowerCase().includes(filters.search.toLowerCase()));
+    const matchYear = !filters.year || book?.year === filters.year;
+    const matchGenres = !filters.genres?.length ||
+      (book?.genres && filters.genres.some((g) => book.genres.includes(g)));
+    const matchAuthor = !filters.author ||
+      (book?.author && book.author.toLowerCase().includes(filters.author.toLowerCase()));
+
     return matchSearch && matchYear && matchGenres && matchAuthor;
   });
 
-  // Уникальные авторы для фильтра
-  const uniqueAuthors = [...new Set(books.map((b) => b.author).filter(Boolean))];
+  const uniqueAuthors = [...new Set(safeBooks.map((b) => b?.author).filter(Boolean))];
+  const uniqueYears = [...new Set(safeBooks.map((b) => b?.year).filter(Boolean))].sort((a, b) => b - a);
 
-  // Уникальные годы для фильтра
-  const uniqueYears = [...new Set(books.map((b) => b.year).filter(Boolean))].sort((a, b) => b - a);
+  const emptyTableText = () => {
+    if (loading) return null;
 
-  // Колонки таблицы
+    const hasActiveFilters = filters.search || filters.year || filters.genres?.length || filters.author;
+
+    if (hasActiveFilters && filteredBooks.length === 0) {
+      return (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Ничего не найдено по заданным фильтрам"
+        >
+          <Button type="primary" onClick={() => setFilters({ search: '', year: null, genres: [], author: '' })}>
+            Сбросить фильтры
+          </Button>
+        </Empty>
+      );
+    }
+
+    if (safeBooks.length === 0) {
+      return (
+        <Empty
+          image={<BookOutlined style={{ fontSize: 48, color: '#ccc' }} />}
+          description={
+            <div>
+              <p style={{ margin: 0, color: '#666' }}>В картотеке пока нет книг</p>
+              <p style={{ margin: '8px 0 0 0', fontSize: 12, color: '#999' }}>
+                Нажмите «Добавить книгу», чтобы загрузить первую
+              </p>
+            </div>
+          }
+        >
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingBook(null);
+              form.resetFields();
+              setIsModalVisible(true);
+            }}
+          >
+            Добавить книгу
+          </Button>
+        </Empty>
+      );
+    }
+
+    return null;
+  };
+
   const columns = [
     {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      sorter: (a, b) => (a?.name || '').localeCompare(b?.name || ''),
+      render: (text) => text || '—',
     },
     {
       title: 'Автор',
       dataIndex: 'author',
       key: 'author',
       filters: uniqueAuthors.map((a) => ({ text: a, value: a })),
-      onFilter: (value, record) => record.author === value,
+      onFilter: (value, record) => record?.author === value,
+      render: (text) => text || '—',
     },
     {
       title: 'Год',
       dataIndex: 'year',
       key: 'year',
-      sorter: (a, b) => a.year - b.year,
+      sorter: (a, b) => (a?.year || 0) - (b?.year || 0),
       filters: uniqueYears.map((y) => ({ text: String(y), value: y })),
-      onFilter: (value, record) => record.year === value,
+      onFilter: (value, record) => record?.year === value,
+      render: (text) => text || '—',
     },
     {
       title: 'Жанры',
       dataIndex: 'genres',
       key: 'genres',
-      render: (genres) => (
-        <Space wrap>
-          {genres?.map((genre) => (
-            <Tag key={genre} color="blue">{genre}</Tag>
-          ))}
-        </Space>
-      ),
+      render: (genres) => {
+        if (!genres || genres.length === 0) return '—';
+        return (
+          <Space wrap>
+            {genres.map((genre) => (
+              <Tag key={genre} color="blue">{genre}</Tag>
+            ))}
+          </Space>
+        );
+      },
       filters: AVAILABLE_GENRES.map((g) => ({ text: g, value: g })),
-      onFilter: (value, record) => record.genres?.includes(value),
+      onFilter: (value, record) => record?.genres?.includes(value),
     },
     {
       title: 'Действия',
       key: 'actions',
+      width: 280,
       render: (_, record) => (
         <Space>
           <Button
             type="primary"
             icon={<CommentOutlined />}
-            onClick={() => handleChat(record.id)}
+            onClick={() => handleChat(record?.id, record?.name)}
+            size="small"
           >
             Чат
           </Button>
           <Button
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
+            size="small"
           >
             Редактировать
           </Button>
           <Popconfirm
             title="Вы уверены, что хотите удалить эту книгу?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record?.id)}
             okText="Да"
             cancelText="Нет"
           >
-            <Button danger icon={<DeleteOutlined />}>
+            <Button danger icon={<DeleteOutlined />} size="small">
               Удалить
             </Button>
           </Popconfirm>
@@ -213,20 +272,20 @@ const BookTable = () => {
 
   return (
     <div>
-      {/* Верхняя панель с фильтрами и кнопкой добавления */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <Search
           placeholder="Поиск по названию или автору"
           allowClear
           style={{ width: 300 }}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          onChange={(e) => setFilters({ ...filters, search: e.target.value || '' })}
         />
         <Select
           placeholder="Фильтр по жанру"
           mode="multiple"
           style={{ width: 200 }}
-          onChange={(value) => setFilters({ ...filters, genres: value })}
+          onChange={(value) => setFilters({ ...filters, genres: value || [] })}
           allowClear
+          value={filters.genres}
         >
           {AVAILABLE_GENRES.map((genre) => (
             <Option key={genre} value={genre}>{genre}</Option>
@@ -245,16 +304,17 @@ const BookTable = () => {
         </Button>
       </div>
 
-      {/* Таблица книг */}
       <Table
         columns={columns}
         dataSource={filteredBooks}
         rowKey="id"
         loading={loading || uploading}
         pagination={{ pageSize: 10 }}
+        locale={{
+          emptyText: emptyTableText(),
+        }}
       />
 
-      {/* Модальное окно для добавления/редактирования */}
       <Modal
         title={editingBook ? 'Редактировать книгу' : 'Добавить книгу'}
         open={isModalVisible}
@@ -272,17 +332,25 @@ const BookTable = () => {
                 <Button key="cancel" onClick={() => setIsModalVisible(false)}>
                   Отмена
                 </Button>,
-                <label key="upload" htmlFor="file-upload">
-                  <Button type="primary" loading={uploading} as="span">
-                    Загрузить PDF
-                  </Button>
-                </label>,
+                <Button
+                  key="upload"
+                  type="primary"
+                  loading={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Загрузить PDF
+                </Button>,
                 <input
+                  ref={fileInputRef}
                   id="file-upload"
                   type="file"
                   accept=".pdf"
                   style={{ display: 'none' }}
-                  onChange={(e) => e.target.files[0] && handleUpload(e.target.files[0])}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleUpload(e.target.files[0]);
+                    }
+                  }}
                 />,
               ]
         }
@@ -308,10 +376,15 @@ const BookTable = () => {
               label="Год"
               rules={[
                 { required: true, message: 'Введите год' },
-                { type: 'number', min: 0, max: new Date().getFullYear(), message: 'Год должен быть от 0 до текущего' },
+                { type: 'integer', min: 0, max: new Date().getFullYear(), message: 'Год должен быть от 0 до текущего' },
               ]}
             >
-              <Input type="number" />
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                max={new Date().getFullYear()}
+                placeholder="Введите год"
+              />
             </Form.Item>
             <Form.Item
               name="genres"

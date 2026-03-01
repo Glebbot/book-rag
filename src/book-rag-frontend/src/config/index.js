@@ -1,7 +1,9 @@
+const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+
 // Единое место для всех настроек приложения
 export const config = {
     // Флаг использования мока вместо реального бекенда
-    USE_MOCK: true,
+    USE_MOCK: isTestEnv || false,
     
     // URL API бекенда
     API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
@@ -10,7 +12,7 @@ export const config = {
     MAX_MESSAGE_LENGTH: 2000,
     
     // Таймаут для имитации запросов (мс)
-    MOCK_DELAY: 100,
+    MOCK_DELAY: 1,
     
     // Максимальное количество сообщений в истории (для UI)
     MAX_CHAT_HISTORY: 5,
