@@ -1,0 +1,14 @@
+# Секреты и окружение
+.env
+.env.local
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.idea/
+
+# Логи
+*.log
