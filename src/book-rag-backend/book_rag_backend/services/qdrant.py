@@ -42,6 +42,7 @@ class QdrantService:
             collection_name=self.collection,
             with_payload=True,
             with_vectors=False,
+            limit=999999
         )
         return points
 

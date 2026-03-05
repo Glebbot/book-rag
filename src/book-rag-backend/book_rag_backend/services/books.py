@@ -1,6 +1,8 @@
+import asyncio
 from uuid import UUID, uuid4
 from fastapi import UploadFile
-from .qdrant import QdrantService
+from book_rag_backend.services.qdrant import QdrantService
+from loguru import logger
 
 
 class BookService:
@@ -47,7 +49,8 @@ class BookService:
             if not content or len(content) == 0:
                 raise ValueError("BadFile")
 
-            text = self.parser.parse_pdf(content)
+            text = await asyncio.to_thread(self.parser.parse_pdf, content)
+            logger.info("PDF parsed")
             if not text or not text.strip():
                 raise ValueError("BadFile")
         except ValueError:
@@ -59,10 +62,12 @@ class BookService:
         name = file.filename.rsplit(".", 1)[0]
 
         chunks = self.splitter.split(text)
+        logger.info(f"Content splitted into {len(chunks)} chunks")
         if not chunks:
             raise ValueError("BadFile")
 
-        vectors = await self.embeddings.embed_batch(chunks)
+        vectors = await asyncio.to_thread(self.embeddings.embed_batch, chunks)
+        logger.info("Embeddings created")
 
         points = []
         for chunk, vector in zip(chunks, vectors):

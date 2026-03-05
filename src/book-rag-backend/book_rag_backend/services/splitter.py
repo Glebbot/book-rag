@@ -28,6 +28,5 @@ class SplitterService:
         if not text or not text.strip():
             return []
 
-        # LangChain возвращает объекты Document, берём только текст
         chunks = self.splitter.split_text(text)
         return chunks

@@ -1,10 +1,11 @@
 qdrant:
-  url: <>
-  api_key: <>
+  url: https://0ccddb47-eb25-458b-bbe8-80de5e7a222e.us-west-1-0.aws.cloud.qdrant.io
+  api_key: ${QDRANT_API_KEY}
+  collection_name: books
 model:
-  url: <>
-  api_key: <>
+  url: https://api.deepseek.com
+  api_key: ${OPENAI_API_KEY}
   model: deepseek-chat
-server:
-  host: 0.0.0.0
-  port: 8000
+splitter:
+  chunk_size: 500
+  chunk_overlap: 50

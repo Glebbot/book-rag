@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, UploadFile
 from fastapi.responses import JSONResponse
-from ..schemas.books import BooksListResponse, BookUpdateRequest
-from ..dependencies import get_book_service
-from ...services.books import BookService
+from book_rag_backend.api.schemas.books import BooksListResponse, BookUpdateRequest
+from book_rag_backend.api.dependencies import get_book_service
+from book_rag_backend.services.books import BookService
 from uuid import UUID
+from loguru import logger
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -33,7 +34,8 @@ async def get_books(service: BookService = Depends(get_book_service)):
     try:
         books = await service.list_books()
         return {"books": books}
-    except Exception:
+    except Exception as e:
+        logger.exception(str(e))
         return JSONResponse(
             status_code=500,
             content={"errorCode": "Exception", "userMessage": "Internal server error"},
