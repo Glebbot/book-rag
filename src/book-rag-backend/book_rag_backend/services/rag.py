@@ -1,9 +1,9 @@
-# book_rag_backend/services/rag.py
 from uuid import UUID
+import asyncio
 from typing import List
-from .qdrant import QdrantService
-from .embeddings import EmbeddingsService
-from .llm import LLMService
+from book_rag_backend.services.qdrant import QdrantService
+from book_rag_backend.services.embeddings import EmbeddingsService
+from book_rag_backend.services.llm import LLMService
 
 
 class RAGService:
@@ -37,7 +37,7 @@ class RAGService:
         user_question = messages[-1]["content"]
 
         # 3. Embed вопрос
-        query_vector = self.embeddings.embed(user_question)
+        query_vector = await asyncio.to_thread(self.embeddings.embed, user_question)
 
         # 4. Поиск релевантных чанков в книге
         chunks = await self.qdrant.semantic_search_in_book(

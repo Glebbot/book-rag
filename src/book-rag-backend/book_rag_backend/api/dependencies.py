@@ -1,15 +1,12 @@
-import os
 from fastapi import Depends, Request
 from book_rag_backend.services.qdrant import QdrantService
 from book_rag_backend.services.books import BookService
 from book_rag_backend.services.parser import ParserService
 from book_rag_backend.services.splitter import SplitterService
 from book_rag_backend.services.embeddings import EmbeddingsService
-from ..services.llm import LLMService
-from ..services.rag import RAGService
-from dotenv import load_dotenv
+from book_rag_backend.services.llm import LLMService
+from book_rag_backend.services.rag import RAGService
 
-load_dotenv()
 
 def get_qdrant_service(request: Request) -> QdrantService:
     return QdrantService(
@@ -46,7 +43,7 @@ def get_llm_service(request: Request) -> LLMService:
     llm_cfg = request.app.state.config.model
     return LLMService(
         base_url=llm_cfg.url,
-        api_key=os.getenv("OPENAI_API_KEY") or llm_cfg.api_key,
+        api_key=llm_cfg.api_key,
         model=llm_cfg.model,
         timeout=600,
         max_tokens=200000,

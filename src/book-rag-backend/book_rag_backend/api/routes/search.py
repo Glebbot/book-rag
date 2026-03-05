@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from uuid import UUID
 
-from ..schemas.search import SearchRequest, SearchResponse, Message
-from ..dependencies import get_rag_service
-from ...services.rag import RAGService
+from book_rag_backend.api.schemas.search import SearchRequest, SearchResponse, Message
+from book_rag_backend.api.dependencies import get_rag_service
+from book_rag_backend.services.rag import RAGService
 
 router = APIRouter(prefix="/search", tags=["search"])
 

@@ -1,0 +1,45 @@
+[run]
+source = book_rag_backend
+omit =
+    # Исключить тесты
+    */tests/*
+    tests/*
+
+    # Исключить конфигурационные файлы
+    */settings.py
+    book_rag_backend/config.py
+    book_rag_backend/api/routes/*
+
+    # Исключить миграции
+    */migrations/*
+
+    # Исключить __init__.py (если не содержат логики)
+    */__init__.py
+
+    # Исключить конкретные файлы
+    book_rag_backend/api/dependencies.py
+    book_rag_backend/app.py
+
+    # Исключить виртуальное окружение
+    */venv/*
+    */.venv/*
+    */site-packages/*
+
+[report]
+exclude_lines =
+    # Стандартные исключения
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+    # Исключить отладочный код
+    print\(
+    pdb.set_trace
+
+show_missing = True
+precision = 2
+fail_under = 80
