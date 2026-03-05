@@ -17,9 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY README.md ./
-COPY uv.lock pyproject.toml ./
-COPY src ./src
+COPY . .
 
 RUN pip install --no-cache-dir uv && \
     uv sync --frozen --no-dev
