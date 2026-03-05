@@ -1,10 +1,15 @@
+import os
 from fastapi import Depends, Request
 from book_rag_backend.services.qdrant import QdrantService
 from book_rag_backend.services.books import BookService
 from book_rag_backend.services.parser import ParserService
 from book_rag_backend.services.splitter import SplitterService
 from book_rag_backend.services.embeddings import EmbeddingsService
+from ..services.llm import LLMService
+from ..services.rag import RAGService
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def get_qdrant_service(request: Request) -> QdrantService:
     return QdrantService(
@@ -35,4 +40,30 @@ def get_book_service(qdrant_service: QdrantService = Depends(get_qdrant_service)
         parser=parser_service,
         splitter=splitter_service,
         embeddings=embeddings_service,
+    )
+
+def get_llm_service(request: Request) -> LLMService:
+    llm_cfg = request.app.state.config.model
+    return LLMService(
+        base_url=llm_cfg.url,
+        api_key=os.getenv("OPENAI_API_KEY") or llm_cfg.api_key,
+        model=llm_cfg.model,
+        timeout=600,
+        max_tokens=200000,
+    )
+
+
+def get_rag_service(
+        _request: Request,
+        qdrant_service: QdrantService = Depends(get_qdrant_service),
+        embeddings_service: EmbeddingsService = Depends(get_embeddings_service),
+        llm_service: LLMService = Depends(get_llm_service),
+) -> RAGService:
+    return RAGService(
+        qdrant=qdrant_service,
+        embeddings=embeddings_service,
+        llm=llm_service,
+        top_k=10,
+        score_threshold=0.5,
+        max_context_tokens=200000,
     )
