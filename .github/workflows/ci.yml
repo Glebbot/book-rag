@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   test-backend:
     runs-on: ubuntu-latest
@@ -26,28 +29,40 @@ jobs:
 
   build-backend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     needs: test-backend
     defaults:
       run:
         working-directory: ./src/book-rag-backend
     steps:
       - uses: actions/checkout@v4
+      - name: Get repository owner
+        run: |
+          echo "OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
       - name: Install Docker
         uses: docker/setup-buildx-action@v3
+      - name: Artifactory login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: ./src/book-rag-backend
           file: ./src/book-rag-backend/Dockerfile
-          push: false
+          push: true
           load: true
           tags: |
-            book-rag-backend:latest
-            book-rag-backend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ github.event.repository.name }}/book-rag-backend:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ github.event.repository.name }}/book-rag-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Check image
-        run: docker images | grep book-rag-backend
+        run: docker images | grep ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ github.event.repository.name }}/book-rag-backend
 
   test-frontend:
     runs-on: ubuntu-latest
