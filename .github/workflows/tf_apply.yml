@@ -1,0 +1,43 @@
+name: Terraform Create VM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Create YC Key file
+        run: |
+          cat > /tmp/key.json << EOF
+          ${{ secrets.YC_SA_KEY }}
+          EOF
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="access_key=${{ secrets.YC_ACCESS_KEY }}" \
+            -backend-config="secret_key=${{ secrets.YC_SECRET_KEY }}"
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var="yc_cloud_id=${{ secrets.YC_CLOUD_ID }}" -var="yc_folder_id=${{ secrets.YC_FOLDER_ID }}" -var="ssh_key_pub=${{ secrets.SSH_KEY_PUB }}"
+        env:
+          YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/key.json
+
+      - name: Show VM IP address
+        run: |
+          VM_ADDRESS=$(terraform output -raw external_ip)
+          echo "### VM Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**IP Address:** \`$VM_ADDRESS\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        
