@@ -49,4 +49,4 @@ jobs:
     with:
       ip_address: ${{ needs.terraform-apply.outputs.vm_ip }}
     secrets:
-      SSH_KEY: ${{ secrets.SSH_KEY }
+      SSH_KEY: ${{ secrets.SSH_KEY }}
