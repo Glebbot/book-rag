@@ -9,6 +9,8 @@ jobs:
     defaults:
       run:
         working-directory: ./terraform
+    outputs:
+      vm_ip: ${{ steps.get-ip.outputs.vm_ip }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
