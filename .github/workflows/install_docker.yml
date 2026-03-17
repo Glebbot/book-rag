@@ -29,7 +29,20 @@ jobs:
 
       - name: Add IP to known_hosts
         run: |
-          ssh-keyscan -H ${{ inputs.ip_address }} >> ~/.ssh/known_hosts
+          echo "Waiting for SSH on ${{ inputs.ip_address }}..."
+          for i in {1..30}; do
+            if ssh-keyscan -H ${{ inputs.ip_address }} >> ~/.ssh/known_hosts 2>/dev/null; then
+              echo "SSH is ready!"
+              break
+            fi
+            echo "Attempt $i/30: SSH not ready yet, waiting 10s..."
+            sleep 10
+          done
+          
+          if ! grep -q ${{ inputs.ip_address }} ~/.ssh/known_hosts; then
+            echo "Failed to connect to VM after 5 minutes"
+            exit 1
+          fi
 
       - name: Insert IP address in inventory
         run: |
