@@ -7,6 +7,9 @@ on:
         description: 'VM IP address'
         required: true
         type: string
+    secrets:
+      SSH_KEY:
+        required: true
 
 jobs:
   ansible-install-docker:
