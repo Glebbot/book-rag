@@ -34,10 +34,17 @@ jobs:
           YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/key.json
 
       - name: Show VM IP address
+        id: get-ip
         run: |
           VM_ADDRESS=$(terraform output -raw external_ip)
+          echo "vm_ip=$VM_ADDRESS" >> $GITHUB_OUTPUT
           echo "### VM Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**IP Address:** \`$VM_ADDRESS\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-        
+
+  install-docker:
+    needs: terraform-apply
+    uses: ./.github/workflows/install_docker.yml
+    with:
+      ip_address: ${{ needs.terraform-apply.outputs.vm_ip }}

@@ -1,0 +1,46 @@
+name: Install Docker with Ansible
+
+on:
+  workflow_call:
+    inputs:
+      ip_address:
+        description: 'VM IP address'
+        required: true
+        type: string
+
+jobs:
+  ansible-install-docker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ansible
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add IP to known_hosts
+        run: |
+          ssh-keyscan -H ${{ inputs.ip_address }} >> ~/.ssh/known_hosts
+
+      - name: Insert IP address in inventory
+        run: |
+          sed "s|{{ IP_ADDRESS }}|${{ inputs.ip_address }}|g" inventory.yml.template > inventory.yml
+          cat inventory.yml
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Install Docker
+        run: |
+          ansible-playbook \
+            -i inventory.yml \
+            playbooks/install_docker.yml \
+            --extra-vars "ansible_host=${{ inputs.ip_address }}"
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False

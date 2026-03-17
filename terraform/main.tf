@@ -65,7 +65,7 @@ resource "yandex_compute_instance" "vm" {
   platform_id = "standard-v3"
 
   resources {
-    cores  = 4
+    cores  = 2
     memory = 4
   }
 
@@ -79,7 +79,7 @@ resource "yandex_compute_instance" "vm" {
     initialize_params {
       image_id = data.yandex_compute_image.ubuntu.image_id
       type     = "network-hdd"
-      size     = 15
+      size     = 10
     }
   }
 
