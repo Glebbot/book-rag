@@ -1,5 +1,5 @@
 qdrant:
-  url: https://0ccddb47-eb25-458b-bbe8-80de5e7a222e.us-west-1-0.aws.cloud.qdrant.io
+  url: http://qdrant:6333
   api_key: ${QDRANT_API_KEY}
   collection_name: books
 model:

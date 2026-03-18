@@ -1,0 +1,61 @@
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"  # HTTP API
+      - "6334:6334"  # gRPC (опционально, можно убрать)
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/6333' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - book-rag-net
+
+  backend:
+    build:
+      context: ./src/book-rag-backend  # путь относительно корня проекта
+      dockerfile: Dockerfile
+    container_name: book-rag-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - QDRANT_URL=http://qdrant:6333  # имя сервиса из docker-compose
+      - QDRANT_API_KEY=
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - backend_cache:/app/.cache  # кэш моделей между перезапусками
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - book-rag-net
+
+
+  frontend:
+    build:
+      context: ./src/book-rag-frontend
+      dockerfile: Dockerfile
+    container_name: book-rag-frontend
+    ports:
+      - "3000:80"  # доступ к фронтенду: http://localhost:3000
+    depends_on:
+      - backend  # опционально: ждём старта бэкенда
+    restart: unless-stopped
+    networks:
+      - book-rag-net
+
+networks:
+  book-rag-net:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+  backend_cache:
