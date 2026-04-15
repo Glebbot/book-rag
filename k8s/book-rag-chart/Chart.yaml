@@ -1,0 +1,11 @@
+apiVersion: v2
+name: book-rag
+description: Helm chart for book RAG application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - rag
+  - qdrant
+maintainers:
+  - name: Developer

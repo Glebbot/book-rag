@@ -1,0 +1,31 @@
+{{- if and .Values.backend.enabled .Values.backend.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.backend.name }}-hpa
+  namespace: {{ .Values.global.namespace }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.backend.name }}
+  minReplicas: {{ .Values.backend.hpa.minReplicas }}
+  maxReplicas: {{ .Values.backend.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.backend.hpa.targetCPUUtilization }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.backend.hpa.scaleDown.stabilizationWindowSeconds }}
+      policies:
+        {{- toYaml .Values.backend.hpa.scaleDown.policies | nindent 8 }}
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.backend.hpa.scaleUp.stabilizationWindowSeconds }}
+      policies:
+        {{- toYaml .Values.backend.hpa.scaleUp.policies | nindent 8 }}
+      selectPolicy: {{ .Values.backend.hpa.scaleUp.selectPolicy }}
+{{- end }}

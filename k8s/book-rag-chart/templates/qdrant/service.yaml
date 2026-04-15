@@ -1,0 +1,20 @@
+{{- if .Values.qdrant.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.qdrant.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: {{ .Values.qdrant.name }}
+spec:
+  selector:
+    app: {{ .Values.qdrant.name }}
+  ports:
+    - name: http
+      port: {{ .Values.qdrant.ports.http }}
+      targetPort: {{ .Values.qdrant.ports.http }}
+    - name: grpc
+      port: {{ .Values.qdrant.ports.grpc }}
+      targetPort: {{ .Values.qdrant.ports.grpc }}
+  type: {{ .Values.qdrant.service.type }}
+{{- end }}

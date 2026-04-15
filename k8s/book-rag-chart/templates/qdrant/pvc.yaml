@@ -1,0 +1,13 @@
+{{- if .Values.qdrant.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.qdrant.storage.pvcName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  accessModes:
+    {{- toYaml .Values.qdrant.storage.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.qdrant.storage.size }}
+{{- end }}

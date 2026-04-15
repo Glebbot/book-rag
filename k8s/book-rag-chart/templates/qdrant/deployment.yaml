@@ -1,0 +1,60 @@
+{{- if .Values.qdrant.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.qdrant.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "book-rag.labels" . | nindent 4 }}
+    app: {{ .Values.qdrant.name }}
+spec:
+  replicas: {{ .Values.qdrant.replicas }}
+  strategy:
+    type: {{ .Values.qdrant.strategy }}
+  selector:
+    matchLabels:
+      app: {{ .Values.qdrant.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.qdrant.name }}
+        {{- include "book-rag.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.qdrant.name }}
+          image: "{{ .Values.qdrant.image.repository }}:{{ .Values.qdrant.image.tag }}"
+          imagePullPolicy: {{ .Values.qdrant.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.qdrant.ports.http }}
+            - name: grpc
+              containerPort: {{ .Values.qdrant.ports.grpc }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.secretRef }}
+          volumeMounts:
+            - name: qdrant-storage
+              mountPath: /qdrant/storage
+          resources:
+            {{- toYaml .Values.qdrant.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.qdrant.probes.liveness.path }}
+              port: {{ .Values.qdrant.ports.http }}
+            initialDelaySeconds: {{ .Values.qdrant.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.qdrant.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.qdrant.probes.readiness.path }}
+              port: {{ .Values.qdrant.ports.http }}
+            initialDelaySeconds: {{ .Values.qdrant.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.qdrant.probes.readiness.periodSeconds }}
+      volumes:
+        - name: qdrant-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.qdrant.storage.pvcName }}
+{{- end }}
