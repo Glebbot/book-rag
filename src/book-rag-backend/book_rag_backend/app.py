@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from typing import AsyncIterator
 from book_rag_backend.api.routes import books_router, search_router
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.models import Distance, VectorParams
@@ -27,9 +28,8 @@ def get_qdrant_client(url: str, api_key: str | None) -> AsyncQdrantClient:
     }
 
     # Ключ и https только для защищённых соединений
-    if api_key and url.startswith("https"):
+    if api_key:
         kwargs["api_key"] = api_key
-        kwargs["https"] = True
 
     return AsyncQdrantClient(**kwargs)
 
@@ -90,6 +90,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/health")
