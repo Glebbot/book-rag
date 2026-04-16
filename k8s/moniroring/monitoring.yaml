@@ -2,19 +2,9 @@ namespaceOverride: book-rag
 
 prometheus:
   prometheusSpec:
-    additionalServiceMonitors:
-      - name: backend-monitor
-        namespace: book-rag
-        selector:
-          matchLabels:
-            app: backend
-        namespaceSelector:
-          matchNames:
-            - book-rag
-        endpoints:
-          - port: http
-            path: /metrics
-            interval: 10s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: { }
+    serviceMonitorNamespaceSelector: { }
     retention: 15d
     storageSpec:
       volumeClaimTemplate:
@@ -32,9 +22,7 @@ prometheus:
         cpu: 2000m
         memory: 4Gi
     podMonitorSelectorNilUsesHelmValues: false
-    serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorNamespaceSelector: {}
-    serviceMonitorNamespaceSelector: {}
 
 
 grafana:
@@ -42,9 +30,9 @@ grafana:
     enabled: true
     storageClassName: yc-network-hdd
     size: 10Gi
-  envFrom:
-      - secretRef:
-        name: app-secrets
+  admin:
+    existingSecret: app-secrets
+    passwordKey: GF_SECURITY_ADMIN_PASSWORD
   resources:
     requests:
       cpu: 250m
