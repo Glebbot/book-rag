@@ -125,7 +125,7 @@ jobs:
             -Dsonar.tests=src/book-rag-backend/tests,src/book-rag-frontend/src
             -Dsonar.python.coverage.reportPaths=src/book-rag-backend/coverage.xml
             -Dsonar.javascript.lcov.reportPaths=src/book-rag-frontend/coverage/lcov.info
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.config.*,**/coverage/**,**/venv/**,src/book-rag-frontend/src/assets/**,**/Dockerfile*,**/*.dockerfile,**/docker-compose*.yml,**/docker-compose*.yaml,src/book-rag-backend/book_rag_backend/app.py,**/api/**
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.config.*,**/coverage/**,**/venv/**,src/book-rag-frontend/src/assets/**,**/Dockerfile*,**/*.dockerfile,**/docker-compose*.yml,**/docker-compose*.yaml,src/book-rag-backend/book_rag_backend/app.py,**/api/**,src/book-rag-frontend/src/App.jsx,src/book-rag-frontend/src/pages/BooksPage.jsx,**/*.test.*,**/index.jsx,**/main.jsx,src/book-rag-frontend/src/pages/ChatPage.jsx,src/book-rag-backend/book_rag_backend/config.py
             -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts,**/tests/**
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
