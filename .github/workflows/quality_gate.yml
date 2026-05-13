@@ -1,0 +1,133 @@
+name: SonarQube Quality Gate
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  REGISTRY: ghcr.io
+  GITHUB_OWNER_RAW: ${{ github.repository_owner }}
+  GITHUB_REPO_RAW: ${{ github.event.repository.name }}
+  SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY}}
+  SONAR_ORGANIZATION: glebbot
+  SONAR_HOST_URL: https://sonarcloud.io
+
+jobs:
+
+  test-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src/book-rag-backend
+    outputs:
+      coverage-enabled: ${{ steps.check-coverage.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest tests/ \
+            --cov=book_rag_backend \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term \
+            --cov-config=.coveragerc
+
+      - name: Check if coverage report exists
+        id: check-coverage
+        run: |
+          if [ -f "src/book-rag-backend/coverage.xml" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Upload backend coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-report
+          path: ./src/book-rag-backend/coverage.xml
+          retention-days: 7
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src/book-rag-frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage -- --run --coverage.reporter=lcov
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: ./src/book-rag-frontend/coverage/lcov.info
+          retention-days: 7
+
+  sonarqube-scan:
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: always() && (needs.test-backend.result == 'success' || needs.test-frontend.result == 'success')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        if: needs.test-frontend.result == 'success'
+        with:
+          name: frontend-coverage-report
+          path: ./src/book-rag-frontend/coverage/
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        if: needs.test-backend.result == 'success'
+        with:
+          name: backend-coverage-report
+          path: ./src/book-rag-backend
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
+            -Dsonar.sources=src/book-rag-backend/book_rag_backend,src/book-rag-frontend/src
+            -Dsonar.tests=src/book-rag-backend/tests,src/book-rag-frontend/src
+            -Dsonar.python.coverage.reportPaths=src/book-rag-backend/coverage.xml
+            -Dsonar.javascript.lcov.reportPaths=src/book-rag-frontend/coverage/lcov.info
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.config.*,**/coverage/**,**/venv/**,src/book-rag-frontend/src/assets/**,**/Dockerfile*,**/*.dockerfile,**/docker-compose*.yml,**/docker-compose*.yaml,src/book-rag-backend/book_rag_backend/app.py,**/api/**
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts,**/tests/**
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+            -Dsonar.scm.disabled=false
+            -Dsonar.verbose=true
