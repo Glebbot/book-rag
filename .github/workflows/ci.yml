@@ -179,3 +179,26 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Check image
         run: docker images | grep ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ github.event.repository.name }}/book-rag-frontend
+
+  notify-telegram:
+    runs-on: ubuntu-latest
+    needs: [ push-backend, push-frontend ]
+    if: always()
+    steps:
+      - name: Send Telegram notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            *🔄 CI/CD Pipeline Status*
+
+            *Репозиторий:* ${{ github.repository }}
+            *Ветка:* ${{ github.ref_name }}
+            *Коммит:* [${{ github.sha }}](${{ github.event.head_commit.url }})
+            *Автор:* ${{ github.actor }}
+            *Workflow:* [Запуск](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            *Статус:* ${{ needs.push-backend.result }} / ${{ needs.push-frontend.result }}
+            *Итог:* ${{ job.status == 'success' && '✅ Успешно' || (job.status == 'failure' && '❌ Провал' || '⚠️ Отменено') }}
