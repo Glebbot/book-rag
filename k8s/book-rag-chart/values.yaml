@@ -46,7 +46,7 @@ backend:
   name: backend
   image:
     repository: ghcr.io/glebbot/book-rag/book-rag-backend
-    tag: 870c2b6e16fb17677d6011a0a5b107732e4edc15
+    tag: d970d6207a576044ed2f8b3cfa2632628d5faba0
     pullPolicy: Always
   replicas: 1
   ports:
@@ -91,7 +91,7 @@ frontend:
   name: frontend
   image:
     repository: ghcr.io/glebbot/book-rag/book-rag-frontend
-    tag: 870c2b6e16fb17677d6011a0a5b107732e4edc15
+    tag: d970d6207a576044ed2f8b3cfa2632628d5faba0
     pullPolicy: Always
   replicas: 1
   ports:
