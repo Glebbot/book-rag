@@ -1,0 +1,25 @@
+community:
+  enabled: true
+
+monitoringPasscodeSecretName: sonar-secrets
+monitoringPasscodeSecretKey: SONAR_MONITORING_PASSCODE
+
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: sonar-secrets
+    existingSecretPasswordKey: SONAR_POSTGRES_PASSWORD
+
+service:
+  type: LoadBalancer
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 400m
+    memory: 2Gi
+  limits:
+    memory: 4Gi

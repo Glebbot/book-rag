@@ -11,7 +11,7 @@ env:
   GITHUB_REPO_RAW: ${{ github.event.repository.name }}
   SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY}}
   SONAR_ORGANIZATION: glebbot
-  SONAR_HOST_URL: https://sonarcloud.io
+  SONAR_HOST_URL: http://158.160.128.186:9000
 
 jobs:
 
