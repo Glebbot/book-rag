@@ -134,22 +134,73 @@ jobs:
 
   notify-telegram:
     runs-on: ubuntu-latest
-    needs: sonarqube-scan
+    needs: [ sonarqube-scan ]
     if: always()
+    permissions:
+      contents: read
+      actions: read
     steps:
+      - name: Generate dynamic job statuses
+        id: gen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JOBS_RAW=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100)
+
+          JOBS_MD=$(echo "$JOBS_RAW" | jq -r '
+            .jobs
+            | map(select(.name != "notify-telegram"))
+            | map({
+                name: .name,
+                status: (.conclusion // "skipped"),
+                emoji: (if .conclusion == "success" then "✅"
+                        elif .conclusion == "failure" then "❌"
+                        elif .conclusion == "cancelled" then "⚠️"
+                        else "⏭️" end)
+              })
+            | map("\(.emoji) \(.name): \(.status)")
+            | join("\n")
+          ')
+
+          OVERALL=$(echo "$JOBS_RAW" | jq -r '
+            [.jobs[].conclusion] | map(select(. != null)) |
+            if length == 0 then "pending"
+            elif any(. == "failure") then "failure"
+            elif all(. == "success") then "success"
+            else "cancelled"
+            end
+          ')
+
+          case "$OVERALL" in
+            success)   O_EMOJI="✅"; O_TEXT="Успешно" ;;
+            failure)   O_EMOJI="❌"; O_TEXT="С ошибками" ;;
+            cancelled) O_EMOJI="⚠️"; O_TEXT="Отменён" ;;
+            *)         O_EMOJI="⏳"; O_TEXT="В процессе" ;;
+          esac
+
+          echo "jobs_list<<EOF" >> $GITHUB_OUTPUT
+          echo "$JOBS_MD" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "overall_emoji=$O_EMOJI" >> $GITHUB_OUTPUT
+          echo "overall_text=$O_TEXT" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
       - name: Send Telegram notification
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
+          disable_web_page_preview: true
           message: |
-            *🔄 SonarQube Quality Gate Status*
+            ${{ steps.gen.outputs.overall_emoji }} *SonarQube Quality gate: ${{ steps.gen.outputs.overall_text }}*
 
-            *Репозиторий:* ${{ github.repository }}
-            *Ветка:* ${{ github.ref_name }}
-            *Коммит:* [${{ github.sha }}](${{ github.event.head_commit.url }})
-            *Автор:* ${{ github.actor }}
-            *Workflow:* [Запуск](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            *📦 Репозиторий:* `${{ github.repository }}`
+            *🌿 Ветка:* `${{ github.ref_name }}`
+            *👤 Автор:* ${{ github.actor }}
+            *🔗 Запуск:* [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
-            *Итог:* ${{ job.status == 'success' && '✅ Успешно' || (job.status == 'failure' && '❌ Провал' || '⚠️ Отменено') }}
+            *📊 Статусы джоб:*
+            ${{ steps.gen.outputs.jobs_list }}
+
+            *⏰ Завершён:* ${{ steps.gen.outputs.timestamp }}

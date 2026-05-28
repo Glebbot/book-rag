@@ -180,9 +180,40 @@ jobs:
       - name: Check image
         run: docker images | grep ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ github.event.repository.name }}/book-rag-frontend
 
-  notify-telegram:
+  argocd-version-change:
     runs-on: ubuntu-latest
     needs: [ push-backend, push-frontend ]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+      - name: Update Helm values
+        run: |
+          VALUES_FILE="k8s/book-rag-chart/values.yaml"
+
+          yq -i ".backend.image.tag = \"${{ github.sha }}\"" "$VALUES_FILE"
+          yq -i ".frontend.image.tag = \"${{ github.sha }}\"" "$VALUES_FILE"
+
+      - name: Commit Helm values
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: |
+            chore(helm): update image tags to ${{ github.sha }} [skip ci]
+          file_pattern: 'k8s/book-rag-chart/values.yaml'
+
+  notify-telegram:
+    runs-on: ubuntu-latest
+    needs: [ push-backend, push-frontend, argocd-version-change ]
     if: always()
     permissions:
       contents: read

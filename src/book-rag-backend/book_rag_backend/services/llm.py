@@ -18,7 +18,7 @@ class LLMService:
         self.max_tokens = max_tokens
         self._client: Optional[httpx.AsyncClient] = None
 
-    async def _get_client(self) -> httpx.AsyncClient:
+    def _get_client(self) -> httpx.AsyncClient:
         if self._client is None:
             self._client = httpx.AsyncClient(
                 timeout=self.timeout,
@@ -39,7 +39,7 @@ class LLMService:
             messages: List[dict],
             temperature: float = 0.0,
     ) -> str:
-        client = await self._get_client()
+        client = self._get_client()
 
         payload = {
             "model": self.model,
