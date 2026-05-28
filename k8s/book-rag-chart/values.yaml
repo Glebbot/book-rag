@@ -4,7 +4,6 @@ global:
   imagePullSecrets:
     - name: ghcr-secret
   secretRef: app-secrets
-
 # Qdrant configuration
 qdrant:
   enabled: true
@@ -41,14 +40,13 @@ qdrant:
       path: /readyz
       initialDelaySeconds: 5
       periodSeconds: 5
-
 # Backend configuration
 backend:
   enabled: true
   name: backend
   image:
     repository: ghcr.io/glebbot/book-rag/book-rag-backend
-    tag: latest
+    tag: 870c2b6e16fb17677d6011a0a5b107732e4edc15
     pullPolicy: Always
   replicas: 1
   ports:
@@ -87,14 +85,13 @@ backend:
           value: 4
           periodSeconds: 15
       selectPolicy: Max
-
 # Frontend configuration
 frontend:
   enabled: true
   name: frontend
   image:
     repository: ghcr.io/glebbot/book-rag/book-rag-frontend
-    tag: latest
+    tag: 870c2b6e16fb17677d6011a0a5b107732e4edc15
     pullPolicy: Always
   replicas: 1
   ports:
