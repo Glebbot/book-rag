@@ -78,7 +78,7 @@ class TestLLMService:
     @pytest.mark.asyncio
     async def test_get_client_creates_new_client(self, llm_service):
         """Test that _get_client creates a new httpx.AsyncClient."""
-        client = await llm_service._get_client()
+        client = llm_service._get_client()
         
         assert client is not None
         assert isinstance(client, httpx.AsyncClient)
@@ -91,8 +91,8 @@ class TestLLMService:
     @pytest.mark.asyncio
     async def test_get_client_reuses_existing_client(self, llm_service):
         """Test that _get_client reuses existing client."""
-        client1 = await llm_service._get_client()
-        client2 = await llm_service._get_client()
+        client1 = llm_service._get_client()
+        client2 = llm_service._get_client()
         
         assert client1 is client2
         
@@ -102,7 +102,7 @@ class TestLLMService:
     @pytest.mark.asyncio
     async def test_close_closes_client(self, llm_service):
         """Test that close properly closes the client."""
-        client = await llm_service._get_client()
+        client = llm_service._get_client()
         assert llm_service._client is not None
         
         await llm_service.close()
